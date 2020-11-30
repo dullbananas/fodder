@@ -1,0 +1,8 @@
+[package]
+name = "fodder"
+version = "0.1.0"
+authors = ["dullbananas"]
+edition = "2018"
+
+[dependencies]
+fodder-macro = { path = "fodder-macro", version = "0.1" }
