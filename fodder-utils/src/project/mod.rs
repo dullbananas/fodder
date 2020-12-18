@@ -1,13 +1,12 @@
 mod constraint;
 mod elm_json;
-mod from_reader;
-//mod installer;
+pub(crate) mod kind;
 mod license;
+mod repo;
 mod version;
 
 pub use constraint::Constraint;
-pub use elm_json::{ElmJson, Application, Package};
-pub(crate) use from_reader::FromReader;
-//pub use installer::Installer;
+pub use elm_json::{Application, Package};
 pub use license::License;
+pub use repo::Repo;
 pub use version::Version;

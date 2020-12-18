@@ -21,11 +21,18 @@ macro_rules! to_str {
     };
 }
 
-// implements `from_str(str) -> Option` and Deserialize
+macro_rules! unreachable {
+    () => {
+        std::unreachable!()
+    };
+}
+
+// implements FromStr and Deserialize
 macro_rules! from_str {
     {$parsable:ty |$arg:ident| $body:block} => {
-        impl $parsable {
-            pub fn from_str($arg: &str) -> ::std::option::Option<Self>
+        impl ::std::str::FromStr for $parsable {
+            type Err = $crate::Error;
+            fn from_str($arg: &str) -> $crate::Result<Self>
                 $body
         }
         impl<'de> ::serde::Deserialize<'de> for $parsable {
@@ -46,11 +53,13 @@ macro_rules! from_str {
             where
                 E: ::serde::de::Error,
             {
-                match <$parsable>::from_str(vstr) {
-                    ::std::option::Option::Some(v) =>
+                match ::std::str::FromStr::from_str(vstr) {
+                    ::std::result::Result::Ok(v) =>
                         Ok(v),
-                    ::std::option::Option::None =>
-                        Err(E::custom("")),
+                    ::std::result::Result::Err(e) =>
+                        Err(E::custom(
+                            format!("{:?}", e)
+                        )),
                 }
             }
         }

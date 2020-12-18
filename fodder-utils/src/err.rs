@@ -1,18 +1,26 @@
 use std::{
     fmt,
     io,
+    panic::PanicInfo,
 };
 use serde_json::error as json;
-//use zip_extract::{ZipExtractError, ZipError};
 
 
 pub type Result<T, E = Error> =
     std::result::Result<T, E>;
 
 
+pub type MultiResult<T, E = Error> =
+    std::result::Result<T, Vec<E>>;
+
+
 #[derive(Debug)]
 pub enum Error {
     WrongPkgHash(String),
+    ElmJsonParse {
+        content: String,
+        example: &'static str,
+    },
 
     Io(io::Error),
     Json(json::Error),
@@ -21,14 +29,71 @@ pub enum Error {
 
 
 impl Error {
-    pub async fn report(self) {
-        Result::<()>::Err(self).unwrap();
+    pub async fn report(&self) {
+        println!("{:?}", self);
     }
+
+    
+    pub fn report_panic(info: &PanicInfo) {
+        let payload = format_args!("");
+        // i had some issues here with lifetimes
+        /*let payload: fmt::Arguments = {
+            // info.payload is Any. Usually it is a &str that explains the panic, but it can be any type. If it's a &str, opt_payload is Some. It will be None when it's any other type.
+            let opt_payload: Option<&'static String> = info
+                .payload()
+                .downcast_ref::<String>();
+            if let Some(&p) = opt_payload {
+                format_args!("Message: {msg}\n",
+                    msg=p,
+                )
+            } else {
+                format_args!("")
+            }
+        };*/
+        print!("{title}{info:?}\n{msg}",
+            title=TITLE_PANIC,
+            info=info,
+            msg=payload,
+        );
+    }
+}
+
+
+struct Title(&'static str);
+
+
+impl fmt::Display for Title {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "-- {} ------------\n\n", self.0)
+    }
+}
+
+
+macro_rules! titles {
+    // No lines left
+    {} => {};
+    {
+        // First line
+        $first_n:ident = $first_s:literal;
+        // Other lines
+        $(other_ns:ident = $other_ss:literal;)*
+    } => {
+        static $first_n: Title = Title($first_s);
+        // Process other lines
+        titles! {$($other_ns = $other_ss;)*}
+    }
+}
+
+
+titles! {
+    TITLE_PANIC = "Error";
 }
 
 
 // Generates impls for converting io::Error, etc. to Error (implicitly done when using the ? operator)
 macro_rules! error_from {
+    // No lines left
+    {} => {};
     {
         // First line
         $first_t:path, $first_v:path;
@@ -43,8 +108,6 @@ macro_rules! error_from {
         // Process other lines
         error_from! {$($other_ts, $other_vs;)*}
     };
-    // No lines left
-    {} => {};
 }
 
 error_from! {

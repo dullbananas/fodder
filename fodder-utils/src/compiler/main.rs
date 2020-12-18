@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use crate::{
-    project::{ElmJson, FromReader},
+    project::Application,
 };
 use std::{
     path::PathBuf,
@@ -9,6 +9,10 @@ use std::{
 
 
 pub async fn main(args: TokenStream) -> TokenStream {
+    /*std::panic::set_hook(Box::new(|info| {
+        crate::Error::report_panic(info);
+    }));*/
+
     match main_result(args).await {
         Ok(ok) => ok,
         Err(err) => {
@@ -22,14 +26,15 @@ pub async fn main(args: TokenStream) -> TokenStream {
 
 
 async fn main_result(args: TokenStream) -> crate::Result<TokenStream> {
-    let app_config = match get_elm_json(args).await? {
-        ElmJson::Application(c) => dbg!(c),
-        ElmJson::Package(_) => todo!(),
-    };
+    let app_config = get_app_config(args).await?;
     let pkg_dir = get_pkg_dir().await?;
     let client = reqwest::Client::new();
     app_config
         .install_dependencies(&pkg_dir, client)
+        .await?;
+    
+    let ast = app_config
+        .create_ast()
         .await?;
     
     let result = quote! {
@@ -41,16 +46,18 @@ async fn main_result(args: TokenStream) -> crate::Result<TokenStream> {
 }
 
 
-async fn get_elm_json(args: TokenStream) -> crate::Result<ElmJson> {
-    let path: String = syn
+async fn get_app_config(args: TokenStream) -> crate::Result<Application> {
+    let rel_path: String = syn
         ::parse2::<syn::LitStr>(args)
         .unwrap()
         .value();
-    let mut file = tokio::fs::File
-        ::open(path)
-        .await?;
-    ElmJson
-        ::from_reader(&mut file)
+    let mut path: PathBuf = std::env
+        ::var("CARGO_MANIFEST_DIR")
+        .unwrap()
+        .into();
+    path.push(rel_path);
+    Application
+        ::from_path(&mut path)
         .await
 }
 

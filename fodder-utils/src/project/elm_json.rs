@@ -4,27 +4,25 @@ use std::{
     collections::HashMap,
 };
 use tokio::{
-    stream::StreamExt,
+    fs::File,
+    prelude::*,
 };
 use tokio_compat_02::FutureExt;
+use super::{Constraint, kind, License, Repo, Version};
+use crate::ast;
 
 
 type DepList<T> =
-    HashMap<String, T>;
+    HashMap<Repo, T>;
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all="kebab-case")]
-#[serde(tag = "type")]
-pub enum ElmJson {
-    Application(Application),
-    Package(Package),
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all="kebab-case")]
 pub struct Application {
+    #[serde(rename = "type")]
+    kind: kind::Application,
     source_directories: Vec<PathBuf>,
-    elm_version: super::Version,
+    elm_version: Version,
     dependencies: ApplicationDeps,
     test_dependencies: ApplicationDeps,
 }
@@ -32,44 +30,43 @@ pub struct Application {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all="kebab-case")]
 pub struct Package {
-    name: String,
+    #[serde(rename = "type")]
+    kind: kind::Package,
+    name: Repo,
     summary: String,
-    license: super::License,
-    version: super::Version,
-    exposed_modules: Vec<crate::ast::name::Module>,
-    elm_version: super::Constraint,
-    dependencies: DepList<super::Constraint>,
-    test_dependencies: DepList<super::Constraint>,
+    license: License,
+    version: Version,
+    exposed_modules: Vec<String>,
+    elm_version: Constraint,
+    dependencies: DepList<Constraint>,
+    test_dependencies: DepList<Constraint>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all="kebab-case")]
 pub struct ApplicationDeps {
-    direct: DepList<super::Version>,
-    indirect: DepList<super::Version>,
+    direct: DepList<Version>,
+    indirect: DepList<Version>,
 }
 
 
 impl Application {
+    pub fn iter_dependencies<'a>(&'a self) -> impl Iterator<Item = (&'a Repo, &'a Version)> + 'a {
+        let direct = self.dependencies.direct
+            .iter();
+        let indirect = self.dependencies.indirect
+            .iter();
+        direct.chain(indirect)
+    }
+
+
     pub async fn install_dependencies(&self, dir: &PathBuf, client: reqwest::Client) -> crate::Result<()> {
-        let iter = std::iter::empty()
-            .chain(self.dependencies.direct.iter())
-            .chain(self.dependencies.direct.iter());
-        let mut stream = tokio::stream
-            ::iter(iter);
-        while
-            let Some((pkg_name, version)) = stream
-                .next()
-                .await
-        {
-            let mut pkg_dir = dir
-                .clone();
-            pkg_dir
-                .push(format!(
-                    "{}/{}", pkg_name, version
-                ));
-            tokio::fs::DirBuilder
-                ::new()
+        for (pkg_name, version) in self.iter_dependencies() {
+            let mut pkg_dir = dir.clone();
+            pkg_dir.push(format!(
+                "{}/{}", pkg_name, version
+            ));
+            tokio::fs::DirBuilder::new()
                 .recursive(true)
                 .create(&pkg_dir)
                 .await?;
@@ -79,9 +76,47 @@ impl Application {
         }
         Ok(())
     }
-}
 
 
-impl super::FromReader for ElmJson {
-    const CAPACITY: usize = 512;
+    pub async fn from_path(path: &mut PathBuf) -> crate::Result<Self> {
+        let mut result: Self = {
+            let mut file = File::open(&*path)
+                .await?;
+            let mut bytes = Vec::<u8>
+                ::with_capacity(1024);
+            file.read_to_end(&mut bytes)
+                .await?;
+            serde_json::from_reader(&bytes[..])
+        }?;
+
+        path.pop();
+        result.prepend_paths(path);
+        Ok(dbg!(result))
+    }
+
+
+    fn prepend_paths(&mut self, prefix: &PathBuf) {
+        for dir in self.source_directories.iter_mut() {
+            let mut new_dir = prefix.clone();
+            new_dir.push(dir.clone());
+            *dir = new_dir;
+        }
+    }
+
+    
+    pub async fn create_ast(&self) -> crate::Result<()> {
+        let mut parser = ast::Parser::new();
+        parser.add_module( ast::ModuleId {
+            repo: Repo::author_project(),
+            name: vec!["Main".to_string()],
+            path: {
+                let mut path = self
+                    .source_directories[0]
+                    .clone();
+                path.push("Main.elm");
+                path
+            },
+        }).await?;
+        Ok(())
+    }
 }

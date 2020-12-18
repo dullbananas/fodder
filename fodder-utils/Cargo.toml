@@ -19,3 +19,5 @@ zip-extract = { version = "0.1", default-features = false, features = [] }
 sha-1 = { version = "0.9" }
 hex = { version = "0.4", features = ["serde"] }
 tokio-compat-02 = { version = "0.1" }
+tree-sitter = { version = "0.17" }
+tree-sitter-elm = { version = "4.4" }

@@ -6,10 +6,11 @@ use std::{
 use reqwest::Client;
 use serde::Deserialize;
 use sha1::{Sha1, Digest};
+use super::{Repo};
 
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Debug)]
-pub struct Version(u8, u8, u8);
+pub struct Version(pub u8, pub u8, pub u8);
 
 from_str! { Version |vstr| {
     let nums: Vec<Result<u8, ParseIntError>> = vstr
@@ -17,10 +18,13 @@ from_str! { Version |vstr| {
         .map(|s| u8::from_str_radix(s, 10))
         .collect();
     match nums.as_slice() {
-        [Ok(a), Ok(b), Ok(c)] =>
-            Some(Version(*a, *b, *c)),
-        _ =>
-            None,
+        [Ok(a), Ok(b), Ok(c)] => Ok(
+            Version(*a, *b, *c)
+        ),
+        _ => Err(crate::Error::ElmJsonParse {
+            content: vstr.to_string(),
+            example: "1.0.0",
+        }),
     }
 }}
 
@@ -41,7 +45,7 @@ struct EndpointJson {
 impl Version {
     // Assumes the package is not already installed
     // Doesn't install package's dependencies
-    pub async fn install(&self, dir: &PathBuf, pkg_name: &String, client: &Client) -> crate::Result<()> {
+    pub async fn install(&self, dir: &PathBuf, pkg_name: &Repo, client: &Client) -> crate::Result<()> {
         let endpoint_json = {
             let url = format!(
                 "https://package.elm-lang.org/packages/{}/{}/endpoint.json", pkg_name, self
@@ -61,7 +65,7 @@ impl Version {
             if correct_hash != hash {
                 return Err(
                     crate::Error::WrongPkgHash(
-                        pkg_name.clone()
+                        pkg_name.to_string()
                     )
                 );
             }

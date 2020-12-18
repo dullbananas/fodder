@@ -15,4 +15,4 @@ mod err;
 pub mod ast;
 pub mod compiler;
 
-pub use err::{Result, Error};
+pub use err::{Result, MultiResult, Error};

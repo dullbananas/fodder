@@ -35,14 +35,17 @@ from_str! { Constraint |vstr| {
         .collect();
     match items.as_slice() {
         [low_v, low_op, "v", high_op, high_v] => {
-            Some(Constraint {
+            Ok(Constraint {
                 low_v: Version::from_str(low_v)?,
                 low_op: Op::from_str(low_op)?,
                 high_op: Op::from_str(high_op)?,
                 high_v: Version::from_str(high_v)?,
             })
         }
-        _ => None,
+        _ => Err(crate::Error::ElmJsonParse {
+            content: vstr.to_string(),
+            example: "1.3.0 <= v < 2.0.0",
+        }),
     }
 }}
 
@@ -54,9 +57,12 @@ to_str! { Constraint |c, f| {
 
 from_str! { Op |s| {
     match s {
-        "<" => Some(Op::Less),
-        "<=" => Some(Op::LessEq),
-        _ => None,
+        "<" => Ok(Op::Less),
+        "<=" => Ok(Op::LessEq),
+        _ => Err(crate::Error::ElmJsonParse {
+            content: s.to_string(),
+            example: "<",
+        }),
     }
 }}
 

@@ -10,8 +10,11 @@ to_str! { License
 from_str! { License
     |lstr| {
         match spdx::license_id(lstr) {
-            Some(_) => Some(License(lstr.to_string())),
-            None => None,
+            Some(_) => Ok(License(lstr.to_string())),
+            None => Err(crate::Error::ElmJsonParse {
+                content: lstr.to_string(),
+                example: "MIT",
+            }),
         }
     }
 }
