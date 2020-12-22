@@ -1,7 +1,8 @@
 use fodder::fodder;
 
 
-fodder!("examples/worker/elm.json");
+#[fodder("examples/worker/elm.json")]
+mod elm {}
 
 
 // force recompile

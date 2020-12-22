@@ -6,14 +6,17 @@ use crate::{
 use std::{
     path::PathBuf,
 };
+use syn::{
+    ItemMod,
+};
 
 
-pub async fn main(args: TokenStream) -> TokenStream {
+pub async fn main(args: TokenStream, body: TokenStream) -> TokenStream {
     /*std::panic::set_hook(Box::new(|info| {
         crate::Error::report_panic(info);
     }));*/
 
-    match main_result(args).await {
+    match main_result(args, body).await {
         Ok(ok) => ok,
         Err(err) => {
             err.report().await;
@@ -25,7 +28,13 @@ pub async fn main(args: TokenStream) -> TokenStream {
 }
 
 
-async fn main_result(args: TokenStream) -> crate::Result<TokenStream> {
+async fn main_result(args: TokenStream, body: TokenStream) -> crate::Result<TokenStream> {
+    let ItemMod {
+        ident: mod_ident,
+        ..
+    } =
+        syn::parse2::<ItemMod>(body)
+        .unwrap();
     let app_config = get_app_config(args).await?;
     let pkg_dir = get_pkg_dir().await?;
     let client = reqwest::Client::new();
@@ -38,7 +47,7 @@ async fn main_result(args: TokenStream) -> crate::Result<TokenStream> {
         .await?;
     
     let result = quote! {
-        mod elm {}
+        mod #mod_ident {}
     };
     
     println!("{}", result);
