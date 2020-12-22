@@ -42,7 +42,7 @@ impl<'a> ParseBuffer<'a> {
         self.lexer.next()
     }
 
-    
+
     #[inline(always)]
     pub fn parse<T: Parse>(&'a self) -> ParseResult<T> {
         T::parse(self)
