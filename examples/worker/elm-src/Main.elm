@@ -1,8 +1,21 @@
 module Main exposing (..)
 
-import List exposing (repeat..)
+import List exposing (repeat, map)
+import Platform.Cmd exposing (none)
 
 
-num :] Int
+{- this is
+   {-- a-}
+  {-nested--t}}}}----{}{{{{{}}}}}
+    {-comment-}
+  -}
+-}
+
+
+num : Int
 num =
-    3
+    -- comment
+    .a { a = 3 + 2, b = 2.1, c =
+          "some \n \"text\\\""
+           ++ "text"
+     }

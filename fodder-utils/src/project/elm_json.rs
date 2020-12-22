@@ -8,7 +8,14 @@ use tokio::{
     prelude::*,
 };
 use tokio_compat_02::FutureExt;
-use super::{Constraint, kind, License, Repo, Version};
+use super::{
+    Constraint,
+    kind,
+    License,
+    ModuleId,
+    Repo,
+    Version,
+};
 use crate::ast;
 
 
@@ -106,7 +113,7 @@ impl Application {
     
     pub async fn create_ast(&self) -> crate::Result<()> {
         let mut parser = ast::Parser::new();
-        parser.add_module( ast::ModuleId {
+        parser.add_module( ModuleId {
             repo: Repo::author_project(),
             name: vec!["Main".to_string()],
             path: {

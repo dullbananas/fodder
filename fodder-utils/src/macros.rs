@@ -21,11 +21,11 @@ macro_rules! to_str {
     };
 }
 
-macro_rules! unreachable {
+/*macro_rules! unreachable {
     () => {
         std::unreachable!()
     };
-}
+}*/
 
 // implements FromStr and Deserialize
 macro_rules! from_str {
