@@ -10,9 +10,10 @@ mod m {
 
 #[macro_use] pub(crate) mod macros;
 
-pub mod project;
-mod err;
-pub mod ast;
+mod ast;
 pub mod compiler;
+mod err;
+mod parse;
+mod project;
 
-pub use err::{Result, MultiResult, Error};
+use err::{Result, MultiResult, Error};

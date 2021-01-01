@@ -112,7 +112,7 @@ impl Application {
 
     
     pub async fn create_ast(&self) -> crate::Result<()> {
-        let mut parser = ast::Parser::new();
+        /*let mut parser = ast::Parser::new();
         parser.add_module( ModuleId {
             repo: Repo::author_project(),
             name: vec!["Main".to_string()],
@@ -123,7 +123,7 @@ impl Application {
                 path.push("Main.elm");
                 path
             },
-        }).await?;
+        }).await?;*/
         Ok(())
     }
 }
