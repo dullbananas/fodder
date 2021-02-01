@@ -13,7 +13,7 @@ The only things that should be different with Fodder are:
   * The exact text in error messages, CLI output, etc. (but it still needs to have a similar general style)
   * Absence of some issues, e.g. elm/compiler doesn't have a problem with comparing functions until runtime
 
-Fodder should not have any language features that are not implemented in elm/compiler, unless it's related to ports.
+Fodder should not have any language or syntax features that are not implemented in elm/compiler, unless it's needed for ports.
 
 
 ## Bug reports
