@@ -1,4 +1,3 @@
-pub mod expr;
-mod primitives;
+pub mod module;
 
-pub use primitives::*;
+type IResult<'a, T, E> = nom::IResult<&'a [u8], T, E>;

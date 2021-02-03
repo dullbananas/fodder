@@ -1,6 +1,7 @@
+#![deny(bare_trait_objects)]
 #![deny(unused_must_use)]
 
-// This module is accessed by macros
+// This module is accessed by macro-generated code
 mod m {
     // Used to "rename" e.g. Thing to Visitor<Thing>
     pub struct Visitor<T>(
@@ -8,12 +9,12 @@ mod m {
     );
 }
 
-#[macro_use] pub(crate) mod macros;
+#[macro_use] mod macros;
 
 mod ast;
 pub mod compiler;
-mod err;
+mod error;
 mod parse;
 mod project;
 
-use err::{Result, MultiResult, Error};
+use error::*;

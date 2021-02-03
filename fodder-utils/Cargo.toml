@@ -5,18 +5,16 @@ authors = ["dullbananas"]
 edition = "2018"
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "0.3", features = ["io-util", "fs", "stream", "sync"] }
-serde_json = { version = "1.0", features = ["preserve_order"] }
-spdx = { veresion = "0.3" }
-proc-macro2 = { version = "1.0", default-features = false }
-syn = { version = "1.0", features = ["full"] }
-quote = { version = "1.0" }
 dirs-next = { version = "2.0" }
-reqwest = { version = "0.10", features = ["gzip", "json"] }
-async-trait = { version = "0.1" }
-zip-extract = { version = "0.1", default-features = false, features = [] }
-sha-1 = { version = "0.9" }
 hex = { version = "0.4", features = ["serde"] }
-tokio-compat-02 = { version = "0.1" }
-combine = { version = "4.5" }
+nom = { version = "6.1" }
+proc-macro2 = { version = "1.0", default-features = false }
+quote = { version = "1.0" }
+reqwest = { version = "0.11", features = ["gzip", "json", "tokio-native-tls", "tokio-util"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0"}
+sha-1 = { version = "0.9" }
+spdx = { veresion = "0.3" }
+syn = { version = "1.0", features = ["full"] }
+tokio = { version = "1.0", features = ["fs", "io-util", "sync"] }
+zip-extract = { version = "0.1", default-features = false, features = [] }

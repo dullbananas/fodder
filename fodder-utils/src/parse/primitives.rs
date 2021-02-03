@@ -1,175 +1,72 @@
 use crate::ast;
-use std::future::Future;
+use nom::{
+    IResult,
+};
 
 
-pub struct State {
-    pub ctx_stack: Vec<Ctx>,
-    pub errors: Vec<ErrorInfo>,
-    pub indent: u8,
-    pub position: ast::Position,
-}
-
-
-pub struct ErrorInfo {
-    kind: Error,
+/*pub struct State<'src> {
+    indent: u16,
     position: ast::Position,
+    source_bytes: &'src [u8],
 }
 
 
-pub enum Error {
+#[derive(Clone)]
+pub struct Builder<'a, 'src, T, E, Out> {
+    ok_consumed: &'a dyn Fn(T, State<'src>) -> Out,
+    ok_empty: &'a dyn Fn(T, State<'src>) -> Out,
+    err_consumed: &'a dyn Fn(E) -> Out,
+    err_empty: &'a dyn Fn(E) -> Out,
 }
 
 
-pub enum Ctx {
+pub trait Parser<Out> {
+    type Error;
+    type Value;
+    fn parse<'a, 'src>(
+        &self,
+        state: &'src State<'src>,
+        builder: &'a Builder<'a, 'src, Self::Value, Self::Error, Out>,
+    ) -> Out;
 }
 
 
-/// Controller
-pub struct Co {
-}/* final cursor position */
-pub type PResult<'a, T, F> = Result<Resolve<'a, T>, Err<F>>;
-
-
-pub fn byte<Fut>(byte: u8) -> impl Fn(&mut Co) -> Fut
-where
-    Fut: Future<Output = ()>,
-{
-    debug_assert_ne!(byte, b'\n',
-        "Using \\n will make state.position wrong"
-    );
-    move |co| async {}
+pub struct OneOf<'err, 'p, T, E, Out> {
+    pub error: &'err dyn Fn(ast::Position) -> E,
+    pub parsers: &'p [Box<dyn Parser<Out, Error = E, Value = T>>],
 }
 
 
+impl<'err, 'p, T, E, Out> Parser<Out> for OneOf<'err, 'p, T, E, Out> {
+    type Error = E;
+    type Value = T;
+    fn parse<'a, 'src>(
+        &self,
+        state: &'src State<'src>,
+        builder: &'a Builder<'a, 'src, T, E, Out>,
+    ) -> Out {
+        match self.parsers.split_first() {
+            Some((
+                // Two lines because rust-anal shows long type annotations here
+                parser,
+                parsers,
+            )) => {
+                let err_empty = |_err| {
+                    OneOf {
+                        error: self.error,
+                        parsers: parsers,
+                    }.parse(state, builder)
+                };
+                parser.parse(state, &Builder {
+                    err_empty: &err_empty,
+                    ..*builder
+                })
+            },
 
-/*pub enum PositionChange {
-    KeepLine {
-        add_col: u32,
-    },
-    NewLine {
-        add_row: u32,
-        col: u32,
-    },
-}
-
-
-
-pub struct Resolve<'a, T> {
-    left_over: &'a [u8],
-    pos: PositionChange,
-    value: T,
-}
-
-pub enum Err<F> {
-    Error(Error),
-    Incomplete(Error, F),
-}
-
-
-pub trait Parser<'a, T, F>
-where
-    F: Fn(&'a [u8]) -> PResult<'a, T, F>,
-{
-    fn parse(
-        self,
-        state: &'a State,
-        data: &'a [u8],
-    ) -> PResult<'a, T, F>;
-}
-
-
-pub struct Byte {
-    byte: u8,
-    error: Error,
-}
-
-impl<'a, F> Parser<'a, (), F> for Byte
-where
-    F: Fn(&'a [u8]) -> PResult<'a, (), F>,
-{
-    fn parse(
-        self,
-        state: &'a State,
-        data: &'a [u8],
-    ) -> PResult<'a, (), F> {
-
-        match data.split_first() {
-            Some((x, xs))
-            if *x == self.byte => Ok(
-                Resolve {
-                    left_over: xs,
-                    pos: PositionChange::KeepLine {
-                        add_col: 1,
-                    },
-                    value: (),
-                }
-            ),
-            Some(_) => Err(
-                Err::Error(
-                    self.error,
-                )
-            ),
-            None => Err(
-                Err::Incomplete(
-                    self.error,
-                    |data| self.parse(state, data),
-                )
-            ),
-        }
-    }
-}*/
-
-
-/*pub enum PollParse<'a, T> {
-    Pending,
-    Ready {
-        result: Option<(&'a [u8], T)>,
-        state: State,
-    },
-    /// Should be unreachable
-    EmptyDataError,
-}
-pub use PollParse::*;
-
-
-pub trait Parser<'a, T> {
-    type Running: RunningParser<'a, T>;
-    fn new(self, state: &'a State) -> Self::Running;
-}
-
-
-pub trait RunningParser<'a, T> {
-    fn poll_parse(&mut self, data: &'a [u8]) -> PollParse<'a, T>;
-}
-
-
-pub fn byte<'a>(byte: u8) -> impl Parser<'a, ()> {
-
-    struct Byte(u8);
-    impl<'a> Parser<'a, ()> for Byte {
-        type Running = RunningByte<'a>;
-        fn new(self, state: &'a State) -> Self::Running {
-            RunningByte(state, self.0)
-        }
-    }
-    
-    struct RunningByte<'a>(&'a State, u8);
-    impl<'a> RunningParser<'a, ()> for RunningByte<'a> {
-        fn poll_parse(&mut self, data: &'a [u8]) -> PollParse<'a, ()> {
-            match data.split_first() {
-                None =>
-                    EmptyDataError,
-                Some((x, xs)) if *x == self.1 =>
-                    Ready {
-                        result: Some((xs, ())),
-                        state: State {
-                            position: self.0.position.next_col(),
-                            ..*self.0
-                        }
-                    }
+            None => {
+                let error = (self.error)(state.position.clone());
+                (builder.err_empty)(error)
             }
         }
     }
-
-    Byte(byte)
 }*/

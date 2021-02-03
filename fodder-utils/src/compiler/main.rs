@@ -12,9 +12,9 @@ use syn::{
 
 
 pub async fn main(args: TokenStream, body: TokenStream) -> TokenStream {
-    /*std::panic::set_hook(Box::new(|info| {
-        crate::Error::report_panic(info);
-    }));*/
+    std::panic::set_hook(
+        Box::new(crate::Error::report_panic)
+    );
 
     match main_result(args, body).await {
         Ok(ok) => ok,
@@ -35,15 +35,18 @@ async fn main_result(args: TokenStream, body: TokenStream) -> crate::Result<Toke
     } =
         syn::parse2::<ItemMod>(body)
         .unwrap();
+
     let app_config = get_app_config(args).await?;
-    let pkg_dir = get_pkg_dir().await?;
+    let pkg_dir = get_pkg_dir()
+        .await
+        .map_err(crate::Error::Io)?;
     let client = reqwest::Client::new();
     app_config
         .install_dependencies(&pkg_dir, client)
         .await?;
     
     let ast = app_config
-        .create_ast()
+        .create_ast(&pkg_dir)
         .await?;
     
     let result = quote! {
@@ -71,7 +74,7 @@ async fn get_app_config(args: TokenStream) -> crate::Result<Application> {
 }
 
 
-async fn get_pkg_dir() -> crate::Result<PathBuf> {
+async fn get_pkg_dir() -> std::io::Result<PathBuf> {
     // TODO: read ELM_HOME environment variable
     let mut dir = dirs_next
         ::home_dir()

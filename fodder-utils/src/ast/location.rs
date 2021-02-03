@@ -1,17 +1,9 @@
-//pub type Position = combine::stream::position::SourcePosition;
 /// Both `row` and `col` start at 1
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Position {
-    pub row: u32,
-    pub col: u32,
-}
-
-
-impl Position {
-    pub fn next_col(mut self) -> Position {
-        self.col += 1;
-        self
-    }
+    pub offset: usize,
+    pub row: usize,
+    pub col: usize,
 }
 
 

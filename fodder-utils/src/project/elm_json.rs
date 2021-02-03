@@ -5,9 +5,8 @@ use std::{
 };
 use tokio::{
     fs::File,
-    prelude::*,
+    io::AsyncReadExt,
 };
-use tokio_compat_02::FutureExt;
 use super::{
     Constraint,
     kind,
@@ -76,10 +75,11 @@ impl Application {
             tokio::fs::DirBuilder::new()
                 .recursive(true)
                 .create(&pkg_dir)
-                .await?;
+                .await
+                .map_err(crate::Error::Io)?;
             version
                 .install(&pkg_dir, pkg_name, &client)
-                .compat().await?;
+                .await?;
         }
         Ok(())
     }
@@ -87,13 +87,18 @@ impl Application {
 
     pub async fn from_path(path: &mut PathBuf) -> crate::Result<Self> {
         let mut result: Self = {
-            let mut file = File::open(&*path)
-                .await?;
+            let mut file = File
+                ::open(&*path)
+                .await
+                .map_err(crate::Error::Io)?;
             let mut bytes = Vec::<u8>
                 ::with_capacity(1024);
             file.read_to_end(&mut bytes)
-                .await?;
-            serde_json::from_reader(&bytes[..])
+                .await
+                .map_err(crate::Error::Io)?;
+            serde_json
+                ::from_reader(&bytes[..])
+                .map_err(crate::Error::Json)
         }?;
 
         path.pop();
@@ -111,7 +116,7 @@ impl Application {
     }
 
     
-    pub async fn create_ast(&self) -> crate::Result<()> {
+    pub async fn create_ast(&self, pkg_dir: &PathBuf) -> crate::Result<()> {
         /*let mut parser = ast::Parser::new();
         parser.add_module( ModuleId {
             repo: Repo::author_project(),

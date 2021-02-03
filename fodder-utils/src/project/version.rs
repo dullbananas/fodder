@@ -53,10 +53,12 @@ impl Version {
             let response = client
                 .get(&url)
                 .send()
-                .await?;
+                .await
+                .map_err(crate::Error::Reqwest)?;
             response
                 .json::<EndpointJson>()
-                .await?
+                .await
+                .map_err(crate::Error::Reqwest)?
         };
         let check_hash = |correct_hash, data: &Vec<u8>| {
             let hash: [u8; 20] = Sha1
@@ -72,9 +74,15 @@ impl Version {
             Ok(())
         };
         let zip_reader: Cursor<Vec<u8>> = {
-            let response = client.get(&endpoint_json.url).send().await?;
+            let response = client
+                .get(&endpoint_json.url)
+                .send()
+                .await
+                .map_err(crate::Error::Reqwest)?;
             let bytes: Vec<u8> = response
-                .bytes().await?[..]
+                .bytes()
+                .await
+                .map_err(crate::Error::Reqwest)?[..]
                 .into();
             check_hash(endpoint_json.hash, &bytes)?;
             Cursor::new(bytes)

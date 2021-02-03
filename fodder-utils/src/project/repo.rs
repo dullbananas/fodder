@@ -1,19 +1,22 @@
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Repo(String, String);
+pub struct Repo {
+    user: String,
+    name: String,
+}
 
 
 impl Repo {
-    pub fn author_project() -> Repo {
+    /*pub fn author_project() -> Repo {
         Repo(
             "author".to_string(),
             "project".to_string(),
         )
-    }
+    }*/
 }
 
 
-to_str! { Repo |Repo(a, b), f| {
-    write!(f, "{}/{}", a, b)
+to_str! { Repo |Repo {user, name}, f| {
+    write!(f, "{}/{}", user, name)
 }}
 
 
@@ -22,10 +25,10 @@ from_str! { Repo |rstr| {
         .split('/')
         .collect();
     match parts.as_slice() {
-        [a, b] => Ok(Repo(
-            a.to_string(),
-            b.to_string(),
-        )),
+        [user, name] => Ok(Repo {
+            user: user.to_string(),
+            name: name.to_string(),
+        }),
         _ => Err(crate::Error::ElmJsonParse {
             content: rstr.to_string(),
             example: "elm/json",
